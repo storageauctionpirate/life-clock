@@ -5,3 +5,6 @@ Fun estimates, not medical advice.
 
 ## v2 (Oct 16 2026)
 Per-serving food minutes from research (HENI, Stylianou 2021, plus others); new Habits tab (cravings beaten, activities, sun, salt, screens, sleep, cigarettes); ultra-processed foods take a penalty and whole foods get a small bonus; Sources tab. Backup of v1: index.backup-*.html
+
+## v3 (Oct 16 2026)
+Welcome form shown on first launch, plus a Me tab (profile, weight log, personal targets, starting life estimate). Growth chart. Fast-food section with typical portions.
