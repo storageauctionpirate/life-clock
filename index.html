@@ -40,6 +40,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;padding:8px}.mut{color:
   <div class="mut">Life total: <b id="lifeMin">0</b> min (<span id="lifeDays">0</span> days)</div>
   <div class="mut" id="baseLine" style="margin-top:4px"></div>
   <div class="frame">A picture of what's possible if you live this way every day. A guide, not a promise.</div></div>
+ <div class="card" id="sinceA" style="display:none"></div>
  <div class="card"><h2>Today's moves</h2><div id="moves" class="mut"></div></div>
  <div class="card"><h2>Low today</h2><div id="lows"></div></div>
 </section>
@@ -67,6 +68,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;padding:8px}.mut{color:
 </section>
 <section class="tab" id="t-growth">
  <div class="card"><h2>📈 Personal growth</h2><div class="stat" id="gStats"></div></div>
+ <div class="card" id="sinceB" style="display:none"></div>
  <div class="card"><div class="seg" id="gSeg"></div><canvas id="gc" width="700" height="440"></canvas><p class="mut" id="gNote"></p></div>
 </section>
 <section class="tab" id="t-me">
@@ -89,7 +91,7 @@ const CONFIG={
  targets:{cal:2200,carbs:200,sugar:36,protein:120,fat:75,mg:420,k:3400,fe:8,zn:11,ca:1000,na:2300},
  maxNutrients:['cal','sugar','na'],
  lowSuggest:{mg:'pumpkin seeds or spinach',k:'a banana, potato or avocado',fe:'steak or beans',zn:'beef or pumpkin seeds',ca:'yogurt, sardines or greens',protein:'eggs, chicken or fish'},
- profileDefaults:{name:'',age:40,sex:'M',heightIn:70,weightLb:190,goalLb:175,activity:'moderate',cigs:0,vape:'no',drinksWk:4,drugs:'',ffWk:2,sleepH:7,sunMin:15,garden:'no'},
+ profileDefaults:{name:'',age:40,sex:'M',heightIn:70,weightLb:190,goalLb:175,activity:'moderate',heaviestLb:'',smokeStatus:'never',cigs:0,smokeYears:'',smokeQuit:'',vapeStatus:'never',vapeAmt:'',vapeYears:'',vapeQuit:'',alcStatus:'current',drinksWk:4,alcYears:'',alcQuit:'',drugStatus:'',drugAmt:'',drugYears:'',drugQuit:'',ffStatus:'current',ffWk:2,ffYears:'',ffQuit:'',sleepH:7,sunMin:15,garden:'no'},
  activityFactor:{sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very:1.9},
  activityLabel:{sedentary:'Mostly sitting',light:'Light (walks, on feet some)',moderate:'Moderate (exercise 3-5x/wk)',active:'Active (hard exercise most days)',very:'Very active (physical job + training)'},
  lossDeficit:500, minCal:{M:1500,F:1200},
@@ -97,7 +99,9 @@ const CONFIG={
  gramsPerDrink:14,
  // baseline lifetime deltas (years). src keys map to SOURCES
  base:{
-  smoke:{y:-10,src:'doll'},              // persistent smoker vs never
+  smoke:{y:-10,src:'doll'},
+  quitRegain:[[30,10],[40,9],[50,6],[60,3],[70,0]], // Doll 2004: years regained by age at quitting
+  vapeFormer:{y:-0.25,src:'est'}, cigMin:20, extraDrinkMin:15, // Jackson 2025 per cigarette; Spiegelhalter per extra drink              // persistent smoker vs never
   bmi:[[30,35,-3,'psc'],[35,40,-5.5,'est'],[40,99,-9,'psc']], // PSC: 30-35 -2 to -4, 40-45 -8 to -10 (35-40 interpolated)
   alcohol:[[100,200,-0.5,'wood'],[200,350,-1.5,'wood'],[350,9999,-4.5,'wood']], // grams/week
   activity:{sedentary:[0,'est'],light:[1.8,'moore'],moderate:[3,'wen'],active:[3,'wen'],very:[3,'wen']},
@@ -254,7 +258,7 @@ const SOURCES={
  schnohr:{t:'Schnohr et al. (2018). Various leisure-time physical activities associated with widely divergent life expectancies. Mayo Clin Proc 93:1775.',u:'https://doi.org/10.1016/j.mayocp.2018.06.025',use:'Background for the sports list (tennis, soccer, cycling, swimming); lifetime figures only, so not used as daily numbers.'},
  usda:{t:'USDA FoodData Central (typical restaurant & fast-food entries).',u:'https://fdc.nal.usda.gov/',use:'Approximate nutrition for the fast-food portions.'},
  msj:{t:'Mifflin et al. (1990). A new predictive equation for resting energy expenditure. Am J Clin Nutr 51:241.',u:'https://doi.org/10.1093/ajcn/51.2.241',use:'Personal calorie target (Mifflin-St Jeor × activity level).'},
- doll:{t:'Doll et al. (2004). Mortality in relation to smoking: 50 years\' observations on male British doctors. BMJ 328:1519.',u:'https://doi.org/10.1136/bmj.38142.554479.AE',use:'Ongoing smoking ≈ −10 years vs never (starting estimate).'},
+ doll:{t:'Doll et al. (2004). Mortality in relation to smoking: 50 years\' observations on male British doctors. BMJ 328:1519.',u:'https://doi.org/10.1136/bmj.38142.554479.AE',use:'Ongoing smoking ≈ −10 years vs never. Quitting at about 30 gives back about 10 years, at 40 about 9, at 50 about 6, at 60 about 3 (starting estimate for former smokers).'},
  psc:{t:'Prospective Studies Collaboration (2009). Body-mass index and cause-specific mortality. Lancet 373:1083.',u:'https://doi.org/10.1016/S0140-6736(09)60318-4',use:'BMI 30–35 ≈ −2 to −4 years; 40–45 ≈ −8 to −10 years (starting estimate).'},
  wood:{t:'Wood et al. (2018). Risk thresholds for alcohol consumption. Lancet 391:1513.',u:'https://doi.org/10.1016/S0140-6736(18)30134-X',use:'100–200 g/wk ≈ −0.5 y, 200–350 ≈ −1 to −2 y, over 350 ≈ −4 to −5 y (starting estimate).'},
  moore:{t:'Moore et al. (2012). Leisure time physical activity and mortality. PLoS Med 9:e1001335.',u:'https://doi.org/10.1371/journal.pmed.1001335',use:'Light activity ≈ +1.8 years vs none.'},
@@ -270,18 +274,38 @@ function T(){const p=P(),t={...CONFIG.targets};if(!S.profile)return t;const kg=p
  t.cal=Math.round(Math.max(cal,CONFIG.minCal[p.sex==='F'?'F':'M'])/10)*10;t.sugar=CONFIG.addedSugar[p.sex==='F'?'F':'M'];t.na=CONFIG.sodium;t.protein=Math.round(kg*CONFIG.proteinPerKg);
  if(p.sex==='F'){t.fe=18;t.zn=8;t.mg=320;t.k=2600}return t}
 function baseline(){const p=P(),B=CONFIG.base,out=[];if(!S.profile)return out;
- if(+p.cigs>0)out.push(['Smoking',B.smoke.y,B.smoke.src]);
+ const ss=p.smokeStatus||(+p.cigs>0?'current':'never');
+ if(ss==='current')out.push(['Smoking (current)',B.smoke.y,B.smoke.src]);
+ if(ss==='former'){const qa=quitAge(p,p.smokeQuit),g=regain(qa);out.push([`Former smoker, quit ~age ${Math.round(qa)}`,r1(B.smoke.y+g),B.smoke.src])}
  const b=bmi(p),bb=B.bmi.find(r=>b>=r[0]&&b<r[1]);if(bb)out.push([`BMI ${b.toFixed(1)}`,bb[2],bb[3]]);
- const g=(+p.drinksWk||0)*CONFIG.gramsPerDrink,ab=B.alcohol.find(r=>g>=r[0]&&g<r[1]);if(ab)out.push([`Alcohol ${p.drinksWk}/wk`,ab[2],ab[3]]);
+ const g=(+p.drinksWk||0)*CONFIG.gramsPerDrink,ab=B.alcohol.find(r=>g>=r[0]&&g<r[1]);if(ab&&(p.alcStatus||'current')==='current')out.push([`Alcohol ${p.drinksWk}/wk`,ab[2],ab[3]]);
  const a=B.activity[p.activity];if(a&&a[0])out.push(['Activity',a[0],a[1]]);
- if(p.vape==='yes')out.push(['Vaping',B.vape.y,B.vape.src]);
- if(+p.ffWk>=B.ff.per)out.push([`Fast food ${p.ffWk}/wk`,B.ff.y,B.ff.src]);
+ if(p.vapeStatus==='current'||p.vape==='yes')out.push(['Vaping (current)',B.vape.y,B.vape.src]);if(p.vapeStatus==='former')out.push(['Former vaper',B.vapeFormer.y,B.vapeFormer.src]);
+ if((p.ffStatus||'current')==='current'&&+p.ffWk>=B.ff.per)out.push([`Fast food ${p.ffWk}/wk`,B.ff.y,B.ff.src]);
  if(p.sleepH&&(p.sleepH<7||p.sleepH>9))out.push([`Sleep ${p.sleepH} h`,B.sleep.y,B.sleep.src]);
  if(+p.sunMin>=15)out.push(['Daily sun',B.sun.y,B.sun.src]);
  if(p.garden==='yes')out.push(['Garden food',B.garden.y,B.garden.src]);
  return out}
-const PF=[['name','Name (optional)','text'],['age','Age','number'],['sex','Sex','sel',{M:'Male',F:'Female'}],['heightIn','Height (inches, e.g. 70 = 5\'10")','number'],['weightLb','Weight (lb)','number'],['goalLb','Goal weight (lb)','number'],['activity','Activity level','sel',null],['cigs','Cigarettes per day (0 if none)','number'],['vape','Vape?','sel',{no:'No',yes:'Yes'}],['drinksWk','Alcoholic drinks per week','number'],['drugs','Recreational drug use (optional, not scored)','sel',{'':'Prefer not to say',no:'No',yes:'Yes'}],['ffWk','Fast-food meals per week','number'],['sleepH','Usual sleep (hours)','number'],['sunMin','Usual daily sun (minutes)','number'],['garden','Eat food from your own garden?','sel',{no:'No',yes:'Yes'}]];
-function drawForm(id){const p=P();$(id).innerHTML=PF.map(([k,l,ty,o])=>{o=o||(k==='activity'?CONFIG.activityLabel:null);const v=p[k]??'';return`<label>${l}</label>`+(ty==='sel'?`<select data-k="${k}">${Object.entries(o).map(([a,b])=>`<option value="${a}" ${String(v)===a?'selected':''}>${b}</option>`).join('')}</select>`:`<input data-k="${k}" type="${ty}" step="any" value="${v}">`)}).join('')}
+const yrsSince=d=>d?Math.max(0,(Date.now()-new Date(d+'T12:00').getTime())/31557600000):0;
+const daysSince=d=>d?Math.max(0,Math.floor((Date.now()-new Date(d+'T00:00').getTime())/86400000)):0;
+const quitAge=(p,d)=>(+p.age||40)-yrsSince(d);
+function regain(qa){const t=CONFIG.base.quitRegain;if(qa<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++)if(qa<=t[i][0]){const[a,b]=t[i-1],[c,e]=t[i];return b+(e-b)*(qa-a)/(c-a)}return 0}
+function sinceQuit(){const p=P(),B=CONFIG.base,out=[];if(!S.profile)return out;
+ if(p.smokeStatus==='former'&&p.smokeQuit){const d=daysSince(p.smokeQuit);out.push(['🚭 Smoke-free',d,r1(d*(+p.cigs||10)*B.cigMin/1440),'jackson'])}
+ if(p.vapeStatus==='former'&&p.vapeQuit)out.push(['💨 Vape-free',daysSince(p.vapeQuit),null,'']);
+ if(p.alcStatus==='former'&&p.alcQuit){const d=daysSince(p.alcQuit),pd=(+p.drinksWk||0)/7;out.push(['🍺 Alcohol-free',d,r1(d*Math.max(0,pd-1)*B.extraDrinkMin/1440),'est'])}
+ if(p.drugStatus==='former'&&p.drugQuit)out.push(['💪 Drug-free',daysSince(p.drugQuit),null,'']);
+ if(p.ffStatus==='former'&&p.ffQuit)out.push(['🍔 Off fast food',daysSince(p.ffQuit),null,'']);
+ return out}
+function renderSince(){const q=sinceQuit(),h=q.length?'<h2>Since you quit</h2>'+q.map(x=>`<div class="li"><span>${x[0]}<br><span class="mut">${x[2]!==null?`≈ ${x[2]} days regained (${x[3]==='est'?'app estimate':x[3]})`:'Keep it going'}</span></span><b class="pos" style="font-size:22px">${x[1]} days</b></div>`).join(''):'';
+ ['sinceA','sinceB'].forEach(id=>{const e=$(id);e.innerHTML=h;e.style.display=q.length?'block':'none'})}
+const PF=[['name','Name (optional)','text'],['age','Age','number'],['sex','Sex','sel',{M:'Male',F:'Female'}],['heightIn','Height (inches, e.g. 70 = 5\'10")','number'],['weightLb','Weight (lb)','number'],['goalLb','Goal weight (lb)','number'],['heaviestLb','Heaviest weight ever (lb, optional)','number'],['activity','Activity level','sel',null],['h1','Smoking','hdr'],['smokeStatus','Status','sel',{never:'Never',current:'Current',former:'Former (quit)'}],['cigs','Cigarettes per day (when smoking)','number'],['smokeYears','Years smoked','number'],['smokeQuit','Quit date (if former)','date'],
+['h2','Vaping','hdr'],['vapeStatus','Status','sel',{never:'Never',current:'Current',former:'Former (quit)'}],['vapeAmt','Amount (e.g. pods/week)','text'],['vapeYears','Years vaped','number'],['vapeQuit','Quit date (if former)','date'],
+['h3','Alcohol','hdr'],['alcStatus','Status','sel',{never:'Never',current:'Current',former:'Former (quit)'}],['drinksWk','Drinks per week (when drinking)','number'],['alcYears','Years drinking','number'],['alcQuit','Quit date (if former)','date'],
+['h4','Recreational drugs (optional, private, not scored)','hdr'],['drugStatus','Status','sel',{'':'Prefer not to say',never:'Never',current:'Current',former:'Former (quit)'}],['drugAmt','Amount (optional)','text'],['drugYears','Years','number'],['drugQuit','Quit date (if former)','date'],
+['h5','Fast food','hdr'],['ffStatus','Status','sel',{never:'Rarely/never',current:'Regular',former:'Quit / cut way back'}],['ffWk','Fast-food meals per week','number'],['ffYears','Years eating it regularly','number'],['ffQuit','Date you cut back (if former)','date'],
+['h6','Everyday','hdr'],['sleepH','Usual sleep (hours)','number'],['sunMin','Usual daily sun (minutes)','number'],['garden','Eat food from your own garden?','sel',{no:'No',yes:'Yes'}]];
+function drawForm(id){const p=P();$(id).innerHTML=PF.map(([k,l,ty,o])=>{o=o||(k==='activity'?CONFIG.activityLabel:null);const v=p[k]??'';if(ty==='hdr')return`<h3 style="color:var(--gold);margin:14px 0 0">${l}</h3>`;return`<label>${l}</label>`+(ty==='sel'?`<select data-k="${k}">${Object.entries(o).map(([a,b])=>`<option value="${a}" ${String(v)===a?'selected':''}>${b}</option>`).join('')}</select>`:`<input data-k="${k}" type="${ty}" step="any" value="${v}">`)}).join('')}
 function saveProfile(id,first){const p={...P()};$(id).querySelectorAll('[data-k]').forEach(el=>{const k=el.dataset.k;p[k]=el.type==='number'?(el.value===''?'':+el.value):el.value});
  const old=S.profile;S.profile=p;S.startDate=S.startDate||today();S.weights=S.weights||[];if(!old||old.weightLb!==p.weightLb){S.weights=S.weights.filter(w=>w.d!==today());S.weights.push({d:today(),lb:p.weightLb})}
  if(!S.startWeight)S.startWeight=p.weightLb;save();$('onb').style.display='none';drawForm('meForm');render();toast(first?'Clock started ⏱':'Profile saved')}
@@ -307,7 +331,7 @@ function drawChart(){const c=$('gc'),x=c.getContext('2d'),W=c.width,H=c.height,p
  $('gNote').textContent=`${lab}: ${d[0][1]} → ${d[d.length-1][1]}`}
 function renderGrowth(){const ws=S.weights||[],days=Object.values(S.days).filter(l=>l.length).length,life=r1(Object.values(S.days).reduce((a,l)=>a+dayMinutes(l),0));
  const lost=ws.length&&S.startWeight?r1(S.startWeight-ws[ws.length-1].lb):0,p=P();
- $('gStats').innerHTML=`<div><b>${lost>=0?lost:'+'+(-lost)} lb</b>${lost>=0?'lost':'gained'} since start</div><div><b>${days}</b>days logged</div><div><b>${$('streak').textContent}</b>day fasting streak</div><div><b>${sg(life)}</b>life-total minutes</div>`+(S.profile&&p.goalLb&&ws.length?`<div style="grid-column:span 2"><b>${r1(Math.max(0,ws[ws.length-1].lb-p.goalLb))} lb</b>to goal (${p.goalLb} lb)</div>`:'');
+ $('gStats').innerHTML=`<div><b>${lost>=0?lost:'+'+(-lost)} lb</b>${lost>=0?'lost':'gained'} since start</div><div><b>${days}</b>days logged</div><div><b>${$('streak').textContent}</b>day fasting streak</div><div><b>${sg(life)}</b>life-total minutes</div>`+(S.profile&&p.heaviestLb&&ws.length&&p.heaviestLb>ws[ws.length-1].lb?`<div style="grid-column:span 2"><b>${r1(p.heaviestLb-ws[ws.length-1].lb)} lb</b>down from your heaviest (${p.heaviestLb} lb)</div>`:'')+(S.profile&&p.goalLb&&ws.length?`<div style="grid-column:span 2"><b>${r1(Math.max(0,ws[ws.length-1].lb-p.goalLb))} lb</b>to goal (${p.goalLb} lb)</div>`:'');
  drawChart()}
 function renderMe(){const t=T(),b=bmi();$('tgtBox').innerHTML=S.profile?`BMI <b>${b.toFixed(1)}</b> · Calories <b>${t.cal}</b> · Protein <b>${t.protein} g</b> · Added sugar ≤ <b>${t.sugar} g</b> · Sodium ≤ <b>${t.na} mg</b><br><span class="mut">Calories use Mifflin-St Jeor × your activity level${P().goalLb<P().weightLb-1?', minus 500/day toward your goal weight':''}. Updates when you log a new weight.</span>`:'Fill in your profile to personalize targets.';
  const bl=baseline(),tot=r1(bl.reduce((a,x)=>a+x[1],0));
@@ -360,7 +384,7 @@ function render(){const log=day(today()),m=dayMinutes(log),t=totals(log);
  renderFast();
  if(S.profile){const tot=r1(baseline().reduce((a,x)=>a+x[1],0));$('baseLine').innerHTML=`Starting estimate: <b class="${tot>=0?'pos':'neg'}">${sg(tot)} years</b> · details under Me`}
  $('ffList').innerHTML=FF.map((f,i)=>`<div class="li" onclick="addFF(${i})" style="cursor:pointer"><span>🏭 <b>${f.n}</b><br><span class="mut">${f.p} · ${f.cal} cal · ${f.na} mg sodium</span></span><span><b class="${servingMin(f,0)>=0?'pos':'neg'}">${sg(servingMin(f,0))}</b> <button style="padding:6px 10px">+</button></span></div>`).join('');
- renderGrowth();renderMe()}
+ renderGrowth();renderMe();renderSince()}
 function animNum(to){const el=$('todayMin'),from=shown,st=performance.now();shown=to;el.className='num '+(to>=0?'pos':'neg');(function f(n){const p=Math.min(1,(n-st)/700),v=Math.round(from+(to-from)*p);el.textContent=(v>0?'+':'')+v;if(p<1)requestAnimationFrame(f)})(st)}
 const hrs=ms=>ms/3600000,fmt=ms=>{const s=Math.floor(ms/1000);return[s/3600,s%3600/60,s%60].map(x=>String(Math.floor(x)).padStart(2,'0')).join(':')};
 function toggleFast(){if(S.fastStart){S.fasts.push({s:S.fastStart,e:Date.now()});S.fastStart=null;toast('Fast logged 💪')}else S.fastStart=Date.now();save();render()}
@@ -371,7 +395,7 @@ function renderFast(){const now=Date.now(),cur=S.fastStart?now-S.fastStart:0;$('
  const ds=new Set(S.fasts.filter(f=>hrs(f.e-f.s)>=12).map(f=>new Date(f.e).toLocaleDateString('en-CA')));let st=0,d=new Date();if(!ds.has(d.toLocaleDateString('en-CA')))d.setDate(d.getDate()-1);while(ds.has(d.toLocaleDateString('en-CA'))){st++;d.setDate(d.getDate()-1)}$('streak').textContent=st;
  $('fHist').innerHTML=S.fasts.length?S.fasts.slice().reverse().slice(0,20).map(f=>`<div class="li"><span>${new Date(f.s).toLocaleDateString([], {month:'short',day:'numeric'})}</span><b>${hrs(f.e-f.s).toFixed(1)}h</b></div>`).join(''):'No fasts yet.'}
 function demoHistory(){const H=3600000,n=['Black coffee 12oz','Water','Egg','Banana','Salad / lettuce','Peanuts oz','Beer 12oz','Chicken breast 3oz','Apple','Oatmeal cup'],bad=['Cola 12oz','Hot dog','Donut','Potato chips oz'];
- S.profile={...CONFIG.profileDefaults,name:'Mike',weightLb:198,goalLb:180,cigs:0,drinksWk:10,ffWk:4};S.startDate=null;S.weights=[];S.startWeight=198;
+ S.profile={...CONFIG.profileDefaults,name:'Mike',weightLb:198,goalLb:180,cigs:0,drinksWk:10,ffWk:4,heaviestLb:212,smokeStatus:'former',cigs:15,smokeYears:12,smokeQuit:'2025-03-01',ffStatus:'current'};S.startDate=null;S.weights=[];S.startWeight=198;
  for(let i=20;i>=1;i--){const d=new Date(Date.now()-i*86400000).toLocaleDateString('en-CA'),l=[];const k=Math.max(0,4-Math.floor((20-i)/5));
   n.slice(0,5+((20-i)%5)).forEach(nm=>{const f=F.find(x=>x.n===nm),c=l.filter(x=>x.n===nm).length;l.push({...f,min:servingMin(f,c),t:i*1e6+l.length})});
   bad.slice(0,k).forEach(nm=>{const f=F.find(x=>x.n===nm);l.push({...f,min:servingMin(f,0),t:i*1e6+l.length})});
