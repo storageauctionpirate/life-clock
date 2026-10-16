@@ -8,3 +8,4 @@ Per-serving food minutes from research (HENI, Stylianou 2021, plus others); new 
 
 ## v3 (Oct 16 2026)
 Welcome form shown on first launch, plus a Me tab (profile, weight log, personal targets, starting life estimate). Growth chart. Fast-food section with typical portions.
+v3b: added habit history (status, years, amount, quit date), heaviest weight, credit back for quitting smoking (Doll 2004), Since-you-quit counter.
