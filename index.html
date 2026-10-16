@@ -11,7 +11,7 @@ h2{color:var(--gold2);font-size:17px;margin:2px 0 10px}button{background:var(--g
 button.sec{background:transparent;color:var(--gold2);border:1px solid var(--gold)}button.x{background:transparent;color:var(--red);border:0;padding:4px 8px}
 input,select{width:100%;background:#0a1630;color:var(--txt);border:1px solid #2d4c7e;border-radius:8px;padding:10px;font-size:16px;margin:3px 0}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:2px solid var(--gold);z-index:9}
-nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:12px 2px;font-size:12px}nav button.on{color:var(--gold2);background:#0a1630}
+nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:8px 1px;font-size:11px;line-height:1.5}nav button i{display:block;font-style:normal;font-size:18px}nav button.on{color:var(--gold2);background:#0a1630}
 .tab{display:none}.tab.on{display:block}
 .clock{width:250px;height:250px;margin:6px auto;position:relative}.clock svg{width:100%;height:100%}
 .clock .big{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -27,6 +27,9 @@ nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:12px 
 footer{text-align:center;color:var(--mut);font-size:11px;padding:8px}.mut{color:var(--mut);font-size:13px}
 .hgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.chip{font-size:10px;padding:1px 6px;border-radius:8px;background:#0a1630;color:var(--mut);margin-left:4px}
 .src{font-size:13px;padding:7px 0;border-bottom:1px solid #23406f}.src a{color:var(--gold2)}.frame{font-size:12px;color:var(--mut);text-align:center;margin-top:6px}
+#onb{position:fixed;inset:0;background:var(--bg);z-index:50;overflow:auto;padding:14px}#onb h2{font-size:22px}
+.pf label{display:block;font-size:13px;color:var(--mut);margin:8px 0 2px}.stat{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat div{background:#0a1630;border-radius:10px;padding:10px;text-align:center}.stat b{display:block;font-size:22px;color:var(--gold2)}
+.seg{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}.seg button{padding:7px 10px;font-size:13px}canvas{width:100%;height:220px;background:#0a1630;border-radius:10px}
 </style></head><body>
 <header><h1>⏱ Life Clock</h1><small>Make more money. Free your time. Live longer.</small></header>
 <main>
@@ -35,6 +38,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;padding:8px}.mut{color:
   <div class="clock"><svg viewBox="0 0 250 250"><circle cx="125" cy="125" r="115" fill="#0a1630" stroke="#d4a73a" stroke-width="6"/><g id="ticks"></g><circle id="ring" cx="125" cy="125" r="100" fill="none" stroke-width="10" stroke-linecap="round" transform="rotate(-90 125 125)" stroke-dasharray="628" stroke-dashoffset="628"/><line class="hand" x1="125" y1="125" x2="125" y2="35" stroke="#f0cf73" stroke-width="3" opacity=".35"/></svg>
   <div class="big"><div class="num" id="todayMin">0</div><div class="mut">min today</div></div></div>
   <div class="mut">Life total: <b id="lifeMin">0</b> min (<span id="lifeDays">0</span> days)</div>
+  <div class="mut" id="baseLine" style="margin-top:4px"></div>
   <div class="frame">A picture of what's possible if you live this way every day. A guide, not a promise.</div></div>
  <div class="card"><h2>Today's moves</h2><div id="moves" class="mut"></div></div>
  <div class="card"><h2>Low today</h2><div id="lows"></div></div>
@@ -42,6 +46,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;padding:8px}.mut{color:
 <section class="tab" id="t-log">
  <div class="card"><h2>Quick add</h2><input id="q" placeholder="Search foods & drinks…"><div class="mut" style="margin:4px 0">🌿 whole food · 🏭 ultra-processed</div><div class="grid" id="foods"></div>
  <label class="mut" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="garden" style="width:auto"> 🌱 Grown in my garden (bonus)</label></div>
+ <div class="card" id="ffCard"><h2>🍔 Fast food</h2><p class="mut">Typical portions people actually order. Nutrition is approximate (USDA FoodData Central typical values).</p><div id="ffList"></div></div>
  <div class="card"><h2>Custom entry</h2><input id="cName" placeholder="Name"><div class="row"><input id="cCal" type="number" placeholder="Calories"><input id="cMin" type="number" placeholder="+/- minutes"></div><div class="row"><input id="cPro" type="number" placeholder="Protein g"><input id="cSug" type="number" placeholder="Sugar g"></div><button onclick="addCustom()" style="width:100%">Add</button></div>
  <div class="card"><h2>Daily totals</h2><div id="totals"></div></div>
  <div class="card"><h2>Today's log</h2><div id="logList"></div></div>
@@ -60,13 +65,22 @@ footer{text-align:center;color:var(--mut);font-size:11px;padding:8px}.mut{color:
  <div class="card"><h2>History</h2><div id="fHist" class="mut"></div></div>
  <div class="card"><button class="sec" onclick="demo()">Load demo data</button> <button class="sec" onclick="if(confirm('Erase all data?')){localStorage.removeItem(CONFIG.storeKey);location.reload()}">Reset</button></div>
 </section>
-<section class="tab" id="t-src">
+<section class="tab" id="t-growth">
+ <div class="card"><h2>📈 Personal growth</h2><div class="stat" id="gStats"></div></div>
+ <div class="card"><div class="seg" id="gSeg"></div><canvas id="gc" width="700" height="440"></canvas><p class="mut" id="gNote"></p></div>
+</section>
+<section class="tab" id="t-me">
+ <div class="card pf"><h2>👤 My profile</h2><div id="meForm"></div><button style="width:100%;margin-top:10px" onclick="saveProfile('meForm')">Save profile</button></div>
+ <div class="card"><h2>⚖️ Weight log</h2><div class="row"><input id="wIn" type="number" step="0.1" placeholder="Today's weight (lb)"><button onclick="logWeight()">Log</button></div><div id="wList" class="mut"></div></div>
+ <div class="card"><h2>Your targets</h2><div id="tgtBox" class="mut"></div></div>
+ <div class="card"><h2>Starting life estimate</h2><div id="baseBox"></div></div>
  <div class="card"><h2>How the minutes work</h2><p class="mut">Each number comes from published research where we found one (tagged with its source), or is a rough app estimate (tagged "est"). Food numbers are per serving; habit numbers follow the units below, with daily caps so nothing runs away. Studies measure averages across big groups of people, not what will happen to you. Use this as a guide to habits, not a forecast, and not medical advice.</p></div>
  <div class="card"><h2>Sources</h2><div id="srcList"></div></div>
 </section>
 <footer>A guide to what's possible, not a guarantee. Not medical advice; check with your doctor before big diet, fasting or exercise changes.</footer>
 </main>
-<nav><button class="on" data-t="clock">⏱ Clock</button><button data-t="log">🍽 Log</button><button data-t="habits">💪 Habits</button><button data-t="fast">⏳ Fast</button><button data-t="src">📚 Sources</button></nav>
+<nav><button class="on" data-t="clock"><i>⏱</i>Clock</button><button data-t="log"><i>🍽</i>Log</button><button data-t="habits"><i>💪</i>Habits</button><button data-t="fast"><i>⏳</i>Fast</button><button data-t="growth"><i>📈</i>Growth</button><button data-t="me"><i>👤</i>Me</button></nav>
+<div id="onb" style="display:none"><h2>Welcome to Life Clock</h2><p class="mut">A few quick questions so your targets and starting estimate fit you. Everything stays on this phone. Skip anything you'd rather not answer.</p><div class="card pf" id="onbForm"></div><button style="width:100%;font-size:18px" onclick="saveProfile('onbForm',true)">Start my clock</button><p class="mut" style="text-align:center">You can change all of this later under Me.</p></div>
 <script>
 // ===== CONFIG: tweak everything here =====
 const CONFIG={
@@ -75,6 +89,47 @@ const CONFIG={
  targets:{cal:2200,carbs:200,sugar:36,protein:120,fat:75,mg:420,k:3400,fe:8,zn:11,ca:1000,na:2300},
  maxNutrients:['cal','sugar','na'],
  lowSuggest:{mg:'pumpkin seeds or spinach',k:'a banana, potato or avocado',fe:'steak or beans',zn:'beef or pumpkin seeds',ca:'yogurt, sardines or greens',protein:'eggs, chicken or fish'},
+ profileDefaults:{name:'',age:40,sex:'M',heightIn:70,weightLb:190,goalLb:175,activity:'moderate',cigs:0,vape:'no',drinksWk:4,drugs:'',ffWk:2,sleepH:7,sunMin:15,garden:'no'},
+ activityFactor:{sedentary:1.2,light:1.375,moderate:1.55,active:1.725,very:1.9},
+ activityLabel:{sedentary:'Mostly sitting',light:'Light (walks, on feet some)',moderate:'Moderate (exercise 3-5x/wk)',active:'Active (hard exercise most days)',very:'Very active (physical job + training)'},
+ lossDeficit:500, minCal:{M:1500,F:1200},
+ addedSugar:{M:36,F:25}, sodium:2300, proteinPerKg:1.0,
+ gramsPerDrink:14,
+ // baseline lifetime deltas (years). src keys map to SOURCES
+ base:{
+  smoke:{y:-10,src:'doll'},              // persistent smoker vs never
+  bmi:[[30,35,-3,'psc'],[35,40,-5.5,'est'],[40,99,-9,'psc']], // PSC: 30-35 -2 to -4, 40-45 -8 to -10 (35-40 interpolated)
+  alcohol:[[100,200,-0.5,'wood'],[200,350,-1.5,'wood'],[350,9999,-4.5,'wood']], // grams/week
+  activity:{sedentary:[0,'est'],light:[1.8,'moore'],moderate:[3,'wen'],active:[3,'wen'],very:[3,'wen']},
+  vape:{y:-1,src:'est'}, ff:{per:3,y:-1,src:'est'}, sleep:{y:-1,src:'est'}, sun:{y:0.5,src:'est'}, garden:{y:0.5,src:'est'},
+ },
+ fastFood:[
+ // [name, portion text, cal,carbs,sugar,protein,fat, mg,k,fe,zn,ca,na, minutes, src]
+ ["Kids' burger meal",'hamburger + small fries + 12oz soda',630,99,45,15,20,40,600,3,2,90,690,-17.3,'heni'],
+ ['Burger combo meal','¼-lb cheeseburger + medium fries + 21oz soda',1050,143,68,34,41,60,900,5,5,250,1400,-28.5,'heni'],
+ ['Double cheeseburger meal','double cheeseburger + medium fries + 21oz soda',970,135,65,29,38,55,850,5,5,250,1350,-30.1,'heni'],
+ ['Chicken nuggets 10pc meal','10 nuggets + medium fries + 21oz soda',950,126,58,27,40,50,800,2,1,40,1140,-27.5,'est'],
+ ['Fried chicken (bucket share)','2 pieces, breast + thigh',680,22,0,60,40,60,600,2,4,60,1800,-6.4,'heni'],
+ ['Fried chicken sandwich','one sandwich',450,45,6,28,19,40,450,3,2,80,1200,-1.0,'heni'],
+ ['Fish sandwich','one sandwich, tartar sauce',390,39,5,16,19,30,250,2,1,140,560,3.0,'heni'],
+ ['Large fries','about 150 g',490,66,0,6,23,55,1000,1,1,25,400,3.2,'heni'],
+ ['Pizza slice','1 slice of a large pepperoni',310,35,4,13,13,25,200,3,1,200,700,-4.2,'heni'],
+ ['Pizza, 3 slices','a typical sitting',930,105,12,39,39,75,600,8,4,600,2100,-12.6,'heni'],
+ ['Whole large pizza','8 slices, 14 inch',2480,280,32,104,104,200,1600,22,12,1600,5600,-33.6,'heni'],
+ ['Tacos (2)','2 crunchy beef tacos',340,26,2,16,20,40,350,2,3,120,620,-4.6,'heni'],
+ ['Large burrito','beef & bean, about 300 g',750,90,5,30,28,90,800,6,5,250,1800,-1.3,'heni'],
+ ['Breakfast sandwich','egg, sausage & cheese biscuit',450,30,3,18,30,20,250,3,2,150,1100,-12.3,'heni'],
+ ['Hash brown','1 patty',150,15,0,1,9,15,250,0,0,5,310,0.2,'heni'],
+ ['Milkshake (medium)','about 16 oz',530,86,70,12,15,40,700,1,1,400,300,1.4,'heni'],
+ ['Large soda','30 oz',310,86,86,0,0,0,10,0,0,15,60,-31.3,'heni'],
+ ['Sub sandwich 6"','cold cuts & cheese',410,46,7,20,16,40,400,3,2,200,1300,-35.2,'heni'],
+ ['Sub sandwich footlong','cold cuts & cheese',820,92,14,40,32,80,800,6,4,400,2600,-70.3,'heni'],
+ ['Hot wings (10)','fried, sauced',900,6,1,70,64,70,700,3,6,60,3000,-10,'est'],
+ ['Onion rings (medium)','about 120 g',410,47,5,5,22,20,200,2,0,40,600,-3,'est'],
+ ['Hot dog','one, plain',290,22,4,10,17,15,200,2,2,60,800,-36.3,'heni'],
+ ['Loaded nachos','large, cheese & meat',1100,90,6,35,65,90,700,5,5,500,1700,0.3,'heni'],
+ ['Takeout fried rice','one box, with chicken',900,120,4,30,30,80,500,4,4,80,2000,-8.3,'heni'],
+ ],
  fastBadges:[12,16,24,36,48],
  overCalPenalty:-20,          // est: per 250 cal over target
  upfPenalty:-10,              // est: added to every ultra-processed item
@@ -197,9 +252,68 @@ const SOURCES={
  veerman:{t:'Veerman et al. (2012). Television viewing time and reduced life expectancy. Br J Sports Med 46:927.',u:'https://doi.org/10.1136/bjsports-2011-085662',use:'−21.8 min per hour of TV (applied to leisure screen time).'},
  lee:{t:'Lee et al. (2017). Running as a key lifestyle medicine for longevity. Prog Cardiovasc Dis 60:45–55.',u:'https://doi.org/10.1016/j.pcad.2017.03.005',use:'~7 h gained per hour run. Credit is capped at 60 min/day here because benefits level off.'},
  schnohr:{t:'Schnohr et al. (2018). Various leisure-time physical activities associated with widely divergent life expectancies. Mayo Clin Proc 93:1775.',u:'https://doi.org/10.1016/j.mayocp.2018.06.025',use:'Background for the sports list (tennis, soccer, cycling, swimming); lifetime figures only, so not used as daily numbers.'},
+ usda:{t:'USDA FoodData Central (typical restaurant & fast-food entries).',u:'https://fdc.nal.usda.gov/',use:'Approximate nutrition for the fast-food portions.'},
+ msj:{t:'Mifflin et al. (1990). A new predictive equation for resting energy expenditure. Am J Clin Nutr 51:241.',u:'https://doi.org/10.1093/ajcn/51.2.241',use:'Personal calorie target (Mifflin-St Jeor × activity level).'},
+ doll:{t:'Doll et al. (2004). Mortality in relation to smoking: 50 years\' observations on male British doctors. BMJ 328:1519.',u:'https://doi.org/10.1136/bmj.38142.554479.AE',use:'Ongoing smoking ≈ −10 years vs never (starting estimate).'},
+ psc:{t:'Prospective Studies Collaboration (2009). Body-mass index and cause-specific mortality. Lancet 373:1083.',u:'https://doi.org/10.1016/S0140-6736(09)60318-4',use:'BMI 30–35 ≈ −2 to −4 years; 40–45 ≈ −8 to −10 years (starting estimate).'},
+ wood:{t:'Wood et al. (2018). Risk thresholds for alcohol consumption. Lancet 391:1513.',u:'https://doi.org/10.1016/S0140-6736(18)30134-X',use:'100–200 g/wk ≈ −0.5 y, 200–350 ≈ −1 to −2 y, over 350 ≈ −4 to −5 y (starting estimate).'},
+ moore:{t:'Moore et al. (2012). Leisure time physical activity and mortality. PLoS Med 9:e1001335.',u:'https://doi.org/10.1371/journal.pmed.1001335',use:'Light activity ≈ +1.8 years vs none.'},
+ wen:{t:'Wen et al. (2011). Minimum amount of physical activity for reduced mortality. Lancet 378:1244.',u:'https://doi.org/10.1016/S0140-6736(11)60749-6',use:'15 min/day moderate exercise ≈ +3 years vs inactive.'},
  est:{t:'App estimate',u:'',use:'Rough placeholder where no per-serving study figure was found (water, tea, sun, sleep, salt, garden, cravings, ultra-processed adjustment). Easy to change in CONFIG.'},
 };
 // ===== app =====
+const FF=CONFIG.fastFood.map(f=>({n:f[0],p:f[1],e:'🍔',cal:f[2],carbs:f[3],sugar:f[4],protein:f[5],fat:f[6],mg:f[7],k:f[8],fe:f[9],zn:f[10],ca:f[11],na:f[12],base:f[13],flag:'u',src:f[14]}));
+const P=()=>S.profile||CONFIG.profileDefaults;
+function bmi(p=P()){return p.weightLb&&p.heightIn?703*p.weightLb/(p.heightIn*p.heightIn):0}
+function T(){const p=P(),t={...CONFIG.targets};if(!S.profile)return t;const kg=p.weightLb/2.2046,cm=p.heightIn*2.54;
+ const bmr=10*kg+6.25*cm-5*p.age+(p.sex==='F'?-161:5);let cal=bmr*(CONFIG.activityFactor[p.activity]||1.2);if(p.goalLb&&p.goalLb<p.weightLb-1)cal-=CONFIG.lossDeficit;
+ t.cal=Math.round(Math.max(cal,CONFIG.minCal[p.sex==='F'?'F':'M'])/10)*10;t.sugar=CONFIG.addedSugar[p.sex==='F'?'F':'M'];t.na=CONFIG.sodium;t.protein=Math.round(kg*CONFIG.proteinPerKg);
+ if(p.sex==='F'){t.fe=18;t.zn=8;t.mg=320;t.k=2600}return t}
+function baseline(){const p=P(),B=CONFIG.base,out=[];if(!S.profile)return out;
+ if(+p.cigs>0)out.push(['Smoking',B.smoke.y,B.smoke.src]);
+ const b=bmi(p),bb=B.bmi.find(r=>b>=r[0]&&b<r[1]);if(bb)out.push([`BMI ${b.toFixed(1)}`,bb[2],bb[3]]);
+ const g=(+p.drinksWk||0)*CONFIG.gramsPerDrink,ab=B.alcohol.find(r=>g>=r[0]&&g<r[1]);if(ab)out.push([`Alcohol ${p.drinksWk}/wk`,ab[2],ab[3]]);
+ const a=B.activity[p.activity];if(a&&a[0])out.push(['Activity',a[0],a[1]]);
+ if(p.vape==='yes')out.push(['Vaping',B.vape.y,B.vape.src]);
+ if(+p.ffWk>=B.ff.per)out.push([`Fast food ${p.ffWk}/wk`,B.ff.y,B.ff.src]);
+ if(p.sleepH&&(p.sleepH<7||p.sleepH>9))out.push([`Sleep ${p.sleepH} h`,B.sleep.y,B.sleep.src]);
+ if(+p.sunMin>=15)out.push(['Daily sun',B.sun.y,B.sun.src]);
+ if(p.garden==='yes')out.push(['Garden food',B.garden.y,B.garden.src]);
+ return out}
+const PF=[['name','Name (optional)','text'],['age','Age','number'],['sex','Sex','sel',{M:'Male',F:'Female'}],['heightIn','Height (inches, e.g. 70 = 5\'10")','number'],['weightLb','Weight (lb)','number'],['goalLb','Goal weight (lb)','number'],['activity','Activity level','sel',null],['cigs','Cigarettes per day (0 if none)','number'],['vape','Vape?','sel',{no:'No',yes:'Yes'}],['drinksWk','Alcoholic drinks per week','number'],['drugs','Recreational drug use (optional, not scored)','sel',{'':'Prefer not to say',no:'No',yes:'Yes'}],['ffWk','Fast-food meals per week','number'],['sleepH','Usual sleep (hours)','number'],['sunMin','Usual daily sun (minutes)','number'],['garden','Eat food from your own garden?','sel',{no:'No',yes:'Yes'}]];
+function drawForm(id){const p=P();$(id).innerHTML=PF.map(([k,l,ty,o])=>{o=o||(k==='activity'?CONFIG.activityLabel:null);const v=p[k]??'';return`<label>${l}</label>`+(ty==='sel'?`<select data-k="${k}">${Object.entries(o).map(([a,b])=>`<option value="${a}" ${String(v)===a?'selected':''}>${b}</option>`).join('')}</select>`:`<input data-k="${k}" type="${ty}" step="any" value="${v}">`)}).join('')}
+function saveProfile(id,first){const p={...P()};$(id).querySelectorAll('[data-k]').forEach(el=>{const k=el.dataset.k;p[k]=el.type==='number'?(el.value===''?'':+el.value):el.value});
+ const old=S.profile;S.profile=p;S.startDate=S.startDate||today();S.weights=S.weights||[];if(!old||old.weightLb!==p.weightLb){S.weights=S.weights.filter(w=>w.d!==today());S.weights.push({d:today(),lb:p.weightLb})}
+ if(!S.startWeight)S.startWeight=p.weightLb;save();$('onb').style.display='none';drawForm('meForm');render();toast(first?'Clock started ⏱':'Profile saved')}
+function logWeight(){const lb=+$('wIn').value;if(!lb)return;S.weights=(S.weights||[]).filter(w=>w.d!==today());S.weights.push({d:today(),lb});S.weights.sort((a,b)=>a.d<b.d?-1:1);if(S.profile)S.profile.weightLb=lb;if(!S.startWeight)S.startWeight=lb;$('wIn').value='';save();drawForm('meForm');render();toast('Weight logged')}
+function habitScore(d){const l=S.days[d]||[];if(!l.length)return null;let s=0;
+ if(l.filter(x=>x.flag==='w').length>=3)s+=20;if(l.filter(x=>x.flag==='u').length<=1)s+=20;if(l.filter(x=>x.act).reduce((a,x)=>a+x.dur,0)>=20)s+=20;
+ const sl=l.find(x=>x.sleep);if(sl&&sl.min>0)s+=15;if(!l.some(x=>x.h==='cig'))s+=10;if((S.fasts||[]).some(f=>hrs(f.e-f.s)>=12&&new Date(f.e).toLocaleDateString('en-CA')===d))s+=15;return s}
+function addFF(i){const f=FF[i],log=day(today());const c=log.filter(x=>x.n===f.n).length;const o={...f,min:servingMin(f,c)};delete o.base;push(o)}
+let gSer='daily';
+const SER={daily:['Daily minutes','#5fe08a'],cum:['Life total (min)','#f0cf73'],weight:['Weight (lb)','#7fb5ff'],score:['Habit score','#ff9f5a']};
+function series(){const ds=Object.keys(S.days).filter(d=>S.days[d].length).sort();let cum=0;
+ if(gSer==='weight')return (S.weights||[]).map(w=>[w.d,w.lb]);
+ return ds.map(d=>{const m=dayMinutes(S.days[d]);cum+=m;return[d,gSer==='daily'?m:gSer==='cum'?r1(cum):habitScore(d)]}).filter(x=>x[1]!==null)}
+function drawChart(){const c=$('gc'),x=c.getContext('2d'),W=c.width,H=c.height,pad=50;x.clearRect(0,0,W,H);const d=series(),[lab,col]=SER[gSer];
+ $('gSeg').innerHTML=Object.entries(SER).map(([k,v])=>`<button class="${k===gSer?'':'sec'}" onclick="gSer='${k}';drawChart()">${v[0]}</button>`).join('');
+ x.font='20px system-ui';x.fillStyle='#9fb0c9';if(d.length<2){x.fillText('Log a couple of days to see your trend.',pad,H/2);$('gNote').textContent='';return}
+ const vs=d.map(p=>p[1]);let lo=Math.min(...vs),hi=Math.max(...vs);if(gSer!=='weight'){lo=Math.min(lo,0)}if(hi===lo)hi=lo+1;const sp=(hi-lo)*0.1;lo-=sp;hi+=sp;
+ const X=i=>pad+i*(W-pad-20)/(d.length-1),Y=v=>H-35-(v-lo)/(hi-lo)*(H-60);
+ x.strokeStyle='#23406f';x.lineWidth=1;for(let k=0;k<=4;k++){const v=lo+(hi-lo)*k/4;x.beginPath();x.moveTo(pad,Y(v));x.lineTo(W-10,Y(v));x.stroke();x.fillText(Math.round(v),4,Y(v)+6)}
+ if(lo<0&&hi>0){x.strokeStyle='#9fb0c9';x.beginPath();x.moveTo(pad,Y(0));x.lineTo(W-10,Y(0));x.stroke()}
+ x.strokeStyle=col;x.lineWidth=4;x.beginPath();d.forEach((p,i)=>i?x.lineTo(X(i),Y(p[1])):x.moveTo(X(i),Y(p[1])));x.stroke();x.fillStyle=col;d.forEach((p,i)=>{x.beginPath();x.arc(X(i),Y(p[1]),5,0,7);x.fill()});
+ x.fillStyle='#9fb0c9';x.fillText(d[0][0].slice(5),pad,H-8);x.fillText(d[d.length-1][0].slice(5),W-75,H-8);
+ $('gNote').textContent=`${lab}: ${d[0][1]} → ${d[d.length-1][1]}`}
+function renderGrowth(){const ws=S.weights||[],days=Object.values(S.days).filter(l=>l.length).length,life=r1(Object.values(S.days).reduce((a,l)=>a+dayMinutes(l),0));
+ const lost=ws.length&&S.startWeight?r1(S.startWeight-ws[ws.length-1].lb):0,p=P();
+ $('gStats').innerHTML=`<div><b>${lost>=0?lost:'+'+(-lost)} lb</b>${lost>=0?'lost':'gained'} since start</div><div><b>${days}</b>days logged</div><div><b>${$('streak').textContent}</b>day fasting streak</div><div><b>${sg(life)}</b>life-total minutes</div>`+(S.profile&&p.goalLb&&ws.length?`<div style="grid-column:span 2"><b>${r1(Math.max(0,ws[ws.length-1].lb-p.goalLb))} lb</b>to goal (${p.goalLb} lb)</div>`:'');
+ drawChart()}
+function renderMe(){const t=T(),b=bmi();$('tgtBox').innerHTML=S.profile?`BMI <b>${b.toFixed(1)}</b> · Calories <b>${t.cal}</b> · Protein <b>${t.protein} g</b> · Added sugar ≤ <b>${t.sugar} g</b> · Sodium ≤ <b>${t.na} mg</b><br><span class="mut">Calories use Mifflin-St Jeor × your activity level${P().goalLb<P().weightLb-1?', minus 500/day toward your goal weight':''}. Updates when you log a new weight.</span>`:'Fill in your profile to personalize targets.';
+ const bl=baseline(),tot=r1(bl.reduce((a,x)=>a+x[1],0));
+ $('baseBox').innerHTML=bl.length?bl.map(x=>`<div class="li"><span>${x[0]}<span class="chip">${x[2]==='est'?'app estimate':x[2]}</span></span><b class="${x[1]>=0?'pos':'neg'}">${sg(x[1])} y</b></div>`).join('')+`<div class="li"><b>Total vs. a typical starting point</b><b class="${tot>=0?'pos':'neg'}">${sg(tot)} y</b></div><p class="mut">Rough group averages from studies, added together. Changing habits or weight updates this. A guide, not a forecast.</p>`:'<div class="mut">No sourced adjustments for your answers yet.</div>';
+ const ws=(S.weights||[]).slice(-8).reverse();$('wList').innerHTML=ws.map(w=>`<div class="li"><span>${w.d}</span><b>${w.lb} lb</b></div>`).join('')}
+
 const F=CONFIG.foods.map(f=>({n:f[0],e:f[1],cal:f[2],carbs:f[3],sugar:f[4],protein:f[5],fat:f[6],mg:f[7],k:f[8],fe:f[9],zn:f[10],ca:f[11],na:f[12],base:f[13],flag:f[14],src:f[15]}));
 const NUT={cal:'Calories',carbs:'Carbs g',sugar:'Sugar g',protein:'Protein g',fat:'Fat g',mg:'Magnesium mg',k:'Potassium mg',fe:'Iron mg',zn:'Zinc mg',ca:'Calcium mg',na:'Sodium mg'};
 const today=()=>new Date().toLocaleDateString('en-CA');
@@ -210,7 +324,7 @@ const $=id=>document.getElementById(id);
 const r1=x=>Math.round(x*10)/10, sg=x=>(x>0?'+':'')+r1(x);
 function servingMin(f,c){let m;if(Array.isArray(f.base))m=f.base[Math.min(c,f.base.length-1)];else if(f.base>=0)m=f.base*CONFIG.dimPos[Math.min(c,CONFIG.dimPos.length-1)];else m=f.base*(1+CONFIG.dimNegStep*c);
  if(f.flag==='u')m+=CONFIG.upfPenalty;if(f.flag==='w'&&m>0)m+=CONFIG.wholeBonus;return r1(m)}
-function dayMinutes(log){let m=0;const t=totals(log);log.forEach(x=>m+=x.min);m+=Math.floor(Math.max(0,t.cal-CONFIG.targets.cal)/250)*CONFIG.overCalPenalty;m+=Math.floor(Math.max(0,t.na-CONFIG.targets.na)/1000)*CONFIG.sodiumPenaltyPer1000;return r1(m)}
+function dayMinutes(log){let m=0;const t=totals(log);log.forEach(x=>m+=x.min);m+=Math.floor(Math.max(0,t.cal-T().cal)/250)*CONFIG.overCalPenalty;m+=Math.floor(Math.max(0,t.na-T().na)/1000)*CONFIG.sodiumPenaltyPer1000;return r1(m)}
 function totals(log){const t={};Object.keys(NUT).forEach(k=>t[k]=0);log.forEach(x=>Object.keys(NUT).forEach(k=>t[k]+=x[k]||0));return t}
 function push(o,msg){day(today()).push({...o,t:Date.now()+Math.random()});save();render();toast(msg||`${o.e} ${o.n}: ${sg(o.min)} min`)}
 function addFood(i){const f=F[i],log=day(today());const c=log.filter(x=>x.n===f.n).length;let min=servingMin(f,c),n=f.n;
@@ -239,11 +353,14 @@ function render(){const log=day(today()),m=dayMinutes(log),t=totals(log);
  animNum(m);$('lifeMin').textContent=sg(life);$('lifeDays').textContent=(life/1440).toFixed(2);
  const r=$('ring');r.style.stroke=m>=0?'#5fe08a':'#ff6b6b';r.style.transition='stroke-dashoffset .8s';r.style.strokeDashoffset=628-628*Math.min(1,Math.abs(m)/CONFIG.clockFullScale);
  $('moves').innerHTML=log.length?log.slice().reverse().map(x=>`<div class="li">${row(x)}<b class="${x.min>=0?'pos':'neg'}">${sg(x.min)}</b></div>`).join(''):'Nothing logged yet. Hit Log or Habits.';
- const lows=Object.keys(CONFIG.lowSuggest).filter(k=>t[k]<CONFIG.targets[k]*0.5),overs=CONFIG.maxNutrients.filter(k=>t[k]>CONFIG.targets[k]);
+ const lows=Object.keys(CONFIG.lowSuggest).filter(k=>t[k]<T()[k]*0.5),overs=CONFIG.maxNutrients.filter(k=>t[k]>T()[k]);
  $('lows').innerHTML=(overs.map(k=>`<div class="tip">⚠️ Over on ${NUT[k].replace(/ .*/,'').toLowerCase()} today. Go lighter next meal.</div>`).join('')+lows.slice(0,3).map(k=>`<div class="tip">Low ${NUT[k].replace(/ .*/,'').toLowerCase()}: try ${CONFIG.lowSuggest[k]}</div>`).join(''))||'<div class="mut">Looking solid today 👊</div>';
- $('totals').innerHTML=Object.keys(NUT).map(k=>{const p=Math.min(100,t[k]/CONFIG.targets[k]*100),bad=CONFIG.maxNutrients.includes(k)&&t[k]>CONFIG.targets[k];return`<div class="row mut" style="justify-content:space-between"><span>${NUT[k]}</span><span style="text-align:right">${Math.round(t[k])} / ${CONFIG.targets[k]}</span></div><div class="bar"><i style="width:${p}%;${bad?'background:#ff6b6b':''}"></i></div>`}).join('');
+ $('totals').innerHTML=Object.keys(NUT).map(k=>{const p=Math.min(100,t[k]/T()[k]*100),bad=CONFIG.maxNutrients.includes(k)&&t[k]>T()[k];return`<div class="row mut" style="justify-content:space-between"><span>${NUT[k]}</span><span style="text-align:right">${Math.round(t[k])} / ${T()[k]}</span></div><div class="bar"><i style="width:${p}%;${bad?'background:#ff6b6b':''}"></i></div>`}).join('');
  $('logList').innerHTML=log.length?log.map(x=>`<div class="li"><span>${x.e} ${x.n} <span class="mut">${x.cal?x.cal+' cal':''}</span></span><span><b class="${x.min>=0?'pos':'neg'}">${sg(x.min)}</b><button class="x" onclick="delItem(${x.t})">✕</button></span></div>`).join(''):'<div class="mut">Empty</div>';
- renderFast()}
+ renderFast();
+ if(S.profile){const tot=r1(baseline().reduce((a,x)=>a+x[1],0));$('baseLine').innerHTML=`Starting estimate: <b class="${tot>=0?'pos':'neg'}">${sg(tot)} years</b> · details under Me`}
+ $('ffList').innerHTML=FF.map((f,i)=>`<div class="li" onclick="addFF(${i})" style="cursor:pointer"><span>🏭 <b>${f.n}</b><br><span class="mut">${f.p} · ${f.cal} cal · ${f.na} mg sodium</span></span><span><b class="${servingMin(f,0)>=0?'pos':'neg'}">${sg(servingMin(f,0))}</b> <button style="padding:6px 10px">+</button></span></div>`).join('');
+ renderGrowth();renderMe()}
 function animNum(to){const el=$('todayMin'),from=shown,st=performance.now();shown=to;el.className='num '+(to>=0?'pos':'neg');(function f(n){const p=Math.min(1,(n-st)/700),v=Math.round(from+(to-from)*p);el.textContent=(v>0?'+':'')+v;if(p<1)requestAnimationFrame(f)})(st)}
 const hrs=ms=>ms/3600000,fmt=ms=>{const s=Math.floor(ms/1000);return[s/3600,s%3600/60,s%60].map(x=>String(Math.floor(x)).padStart(2,'0')).join(':')};
 function toggleFast(){if(S.fastStart){S.fasts.push({s:S.fastStart,e:Date.now()});S.fastStart=null;toast('Fast logged 💪')}else S.fastStart=Date.now();save();render()}
@@ -253,13 +370,20 @@ function renderFast(){const now=Date.now(),cur=S.fastStart?now-S.fastStart:0;$('
  $('longest').textContent=max.toFixed(1)+'h';
  const ds=new Set(S.fasts.filter(f=>hrs(f.e-f.s)>=12).map(f=>new Date(f.e).toLocaleDateString('en-CA')));let st=0,d=new Date();if(!ds.has(d.toLocaleDateString('en-CA')))d.setDate(d.getDate()-1);while(ds.has(d.toLocaleDateString('en-CA'))){st++;d.setDate(d.getDate()-1)}$('streak').textContent=st;
  $('fHist').innerHTML=S.fasts.length?S.fasts.slice().reverse().slice(0,20).map(f=>`<div class="li"><span>${new Date(f.s).toLocaleDateString([], {month:'short',day:'numeric'})}</span><b>${hrs(f.e-f.s).toFixed(1)}h</b></div>`).join(''):'No fasts yet.'}
-function demo(){const d=new Date(),H=3600000;S.fasts=[];for(let i=4;i>=1;i--){const e=d.getTime()-i*86400000+8*H;S.fasts.push({s:e-[13,16.5,14,17][i-1]*H,e})}S.fastStart=Date.now()-(14*H+23*60000);S.days[today()]=[];
- const idx=n=>F.findIndex(f=>f.n===n);['Black coffee 12oz','Water','Egg','Egg','Banana','Salmon 3oz','Salad / lettuce','Peanuts oz','Beer 12oz','Beer 12oz','Cola 12oz'].forEach(n=>addFood(idx(n)));
+function demoHistory(){const H=3600000,n=['Black coffee 12oz','Water','Egg','Banana','Salad / lettuce','Peanuts oz','Beer 12oz','Chicken breast 3oz','Apple','Oatmeal cup'],bad=['Cola 12oz','Hot dog','Donut','Potato chips oz'];
+ S.profile={...CONFIG.profileDefaults,name:'Mike',weightLb:198,goalLb:180,cigs:0,drinksWk:10,ffWk:4};S.startDate=null;S.weights=[];S.startWeight=198;
+ for(let i=20;i>=1;i--){const d=new Date(Date.now()-i*86400000).toLocaleDateString('en-CA'),l=[];const k=Math.max(0,4-Math.floor((20-i)/5));
+  n.slice(0,5+((20-i)%5)).forEach(nm=>{const f=F.find(x=>x.n===nm),c=l.filter(x=>x.n===nm).length;l.push({...f,min:servingMin(f,c),t:i*1e6+l.length})});
+  bad.slice(0,k).forEach(nm=>{const f=F.find(x=>x.n===nm);l.push({...f,min:servingMin(f,0),t:i*1e6+l.length})});
+  if(i%2)l.push({n:'Walking 30 min',e:'🏃',act:'Walking',dur:30,min:67.5,t:i*1e6+99});l.push({n:'Sleep 7.5 h',e:'😴',sleep:1,min:15,t:i*1e6+98});S.days[d]=l;
+  if(i%3===0)S.weights.push({d,lb:r1(198-(20-i)*0.6)});if(!S.startDate)S.startDate=d}}
+function demo(){demoHistory();$('onb').style.display='none';drawForm('meForm');const d=new Date(),H=3600000;S.fasts=[];for(let i=4;i>=1;i--){const e=d.getTime()-i*86400000+8*H;S.fasts.push({s:e-[13,16.5,14,17][i-1]*H,e})}S.fastStart=Date.now()-(14*H+23*60000);S.days[today()]=[];
+ const idx=n=>F.findIndex(f=>f.n===n);['Black coffee 12oz','Water','Egg','Egg','Banana','Salmon 3oz','Salad / lettuce','Peanuts oz','Beer 12oz','Beer 12oz','Cola 12oz'].forEach(n=>addFood(idx(n)));S.weights.push({d:today(),lb:186.4});S.profile.weightLb=186.4;
  $('actType').value='Walking';$('actMin').value=30;addActivity();addSun();habit('craving');$('tvH').value=1;addTV();setSleep();save();render()}
 $('srcList').innerHTML=Object.entries(SOURCES).map(([k,s])=>`<div class="src"><b>[${k}]</b> ${s.u?`<a href="${s.u}" target="_blank" rel="noopener">${s.t}</a>`:s.t}<div class="mut">${s.use}</div></div>`).join('');
 $('actType').innerHTML=CONFIG.activities.map(a=>`<option>${a}</option>`).join('');
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('t-'+b.dataset.t).classList.add('on');scrollTo(0,0)});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('t-'+b.dataset.t).classList.add('on');scrollTo(0,0);if(b.dataset.t==='growth')drawChart()});
 $('q').oninput=drawFoods;
 $('ticks').innerHTML=[...Array(12)].map((_,i)=>`<line x1="125" y1="15" x2="125" y2="27" stroke="#d4a73a" stroke-width="3" transform="rotate(${i*30} 125 125)"/>`).join('');
-drawFoods();render();setInterval(()=>S.fastStart&&renderFast(),1000);
+drawForm('meForm');drawForm('onbForm');if(!S.profile)$('onb').style.display='block';drawFoods();render();setInterval(()=>S.fastStart&&renderFast(),1000);
 </script></body></html>
